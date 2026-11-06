@@ -43,11 +43,11 @@ export function merge(p,q){
 export const unlocked=p=>p.medals[0]?(p.medals[1]?2:1):0;
 export const available=(p,k)=>k==='coral'||(k==='mint'&&p.medals.some(Boolean))||(k==='champion'&&p.medals.includes(3))||(k==='lilac'&&p.lilac)||(k==='sunset'&&p.sunset);
 const AI=[
- {pace:0,lane:1.36},{pace:1.02,lane:1.40},{pace:.61,lane:2.54},
- {pace:.41,lane:.71},{pace:.75,lane:1.96},{pace:.18,lane:3.12}
+ {pace:0,lane:1.36},{pace:1.02,lane:1.40},{pace:.61,lane:2.91},
+ {pace:.41,lane:.62},{pace:.75,lane:2.13},{pace:.18,lane:3.67}
 ];
 export function newRace(cup=0,round='heat',ids=[0,1,2,3,4,5]){
- const laps=CUPS[cup][round],lanes=[1.38,1.38,2.54,.71,1.96,3.12];
+ const laps=CUPS[cup][round],lanes=[1.38,1.38,2.91,.62,2.13,3.67];
  return {cup,round,laps,phase:'ready',count:3,time:0,energy:100,spent:0,fatigued:false,place:0,
   riders:ids.map((id,i)=>({id,d:i===0?-2.42:i===1?-.15:-1.1-Math.floor((i-1)/2)*1.42,speed:0,lane:lanes[id],pedal:0,finish:0})),draft:false,boost:false};
 }
@@ -116,3 +116,4 @@ export function restore(v,p){
  if(v.phase!=='result'&&v.place!==0)return null;
  return {...v,riders:v.riders.map(a=>({...a})),boost:false,draft:false};
 }
+

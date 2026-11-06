@@ -160,11 +160,11 @@ function merge(p,q){
 const unlocked=p=>p.medals[0]?(p.medals[1]?2:1):0;
 const available=(p,k)=>k==='coral'||(k==='mint'&&p.medals.some(Boolean))||(k==='champion'&&p.medals.includes(3))||(k==='lilac'&&p.lilac)||(k==='sunset'&&p.sunset);
 const AI=[
- {pace:0,lane:1.36},{pace:1.02,lane:1.40},{pace:.61,lane:2.54},
- {pace:.41,lane:.71},{pace:.75,lane:1.96},{pace:.18,lane:3.12}
+ {pace:0,lane:1.36},{pace:1.02,lane:1.40},{pace:.61,lane:2.91},
+ {pace:.41,lane:.62},{pace:.75,lane:2.13},{pace:.18,lane:3.67}
 ];
 function newRace(cup=0,round='heat',ids=[0,1,2,3,4,5]){
- const laps=CUPS[cup][round],lanes=[1.38,1.38,2.54,.71,1.96,3.12];
+ const laps=CUPS[cup][round],lanes=[1.38,1.38,2.91,.62,2.13,3.67];
  return {cup,round,laps,phase:'ready',count:3,time:0,energy:100,spent:0,fatigued:false,place:0,
   riders:ids.map((id,i)=>({id,d:i===0?-2.42:i===1?-.15:-1.1-Math.floor((i-1)/2)*1.42,speed:0,lane:lanes[id],pedal:0,finish:0})),draft:false,boost:false};
 }
@@ -233,6 +233,7 @@ function restore(v,p){
  if(v.phase!=='result'&&v.place!==0)return null;
  return {...v,riders:v.riders.map(a=>({...a})),boost:false,draft:false};
 }
+
 
 const T=window.THREE;
 const TAU=Math.PI*2;
@@ -468,7 +469,19 @@ class Arena{
    this.box(p,.61,.071,.55,this.paint(C.navy),x,.14,-1.4);
   }
   this.board(p,this.texture(graphic('VELODROME','FINALS    /    MEDAL CEREMONY','#23506b','#f4cf87')),5.95,1.98,0,2.97,-1.43);
-  p.visible=false;
+  const shades=[0xf2ba62,0xffebc3,0xe57757,0x7bd6bf];
+  const flakes=new T.InstancedMesh(new T.BoxGeometry(.061,.109,.018),new T.MeshBasicMaterial(),54);
+  flakes.frustumCulled=false;for(let i=0;i<54;i++)flakes.setColorAt(i,new T.Color(shades[i%4]));
+  this.flakes=flakes;this.flakePose=new T.Object3D();p.add(flakes);p.visible=false;
+ }
+ moveConfetti(t){
+  const o=this.flakePose;
+  for(let i=0;i<this.flakes.count;i++){
+   const a=(i*11.647+t*(.61+i%4*.10)),f=(t*(.72+i%8*.033)+i*.153)%4.5;
+   o.position.set(((i*17)%53/53-.5)*6.1+Math.sin(a)*.38,4.47-f,.80+(i%11)*.105);
+   o.rotation.set(a*.61,a*.84,a);o.updateMatrix();this.flakes.setMatrixAt(i,o.matrix);
+  }
+  this.flakes.instanceMatrix.needsUpdate=true;
  }
  pack(parent,keep=new Set()){
   const buckets=new Map();
@@ -640,7 +653,8 @@ class Arena{
     const a=this.actors[rider.id];a.root.visible=true;a.root.position.set([0,-1.72,1.72][i],[1.205,.905,.685][i],0);
     a.root.rotation.set(0,0,0);this.pose(a,rider.pedal,'award',t);
    });
-   eye=vec(.28+Math.sin(t*.45)*.55,3.04,7.6);aim=vec(0,1.85,0);
+   eye=vec(.14+Math.sin(t*.45)*.42,3.16,10.72);aim=vec(0,1.66,0);
+   this.moveConfetti(t);
   }else if(mode==='entry'){
    const advance=Math.min(1,t/2.9),x=-9.10;
    for(let i=0;i<3;i++){
@@ -672,6 +686,7 @@ class Arena{
   this.r.render(this.scene,this.cam);
  }
 }
+
 
 
 

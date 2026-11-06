@@ -234,7 +234,19 @@ export class Arena{
    this.box(p,.61,.071,.55,this.paint(C.navy),x,.14,-1.4);
   }
   this.board(p,this.texture(graphic('VELODROME','FINALS    /    MEDAL CEREMONY','#23506b','#f4cf87')),5.95,1.98,0,2.97,-1.43);
-  p.visible=false;
+  const shades=[0xf2ba62,0xffebc3,0xe57757,0x7bd6bf];
+  const flakes=new T.InstancedMesh(new T.BoxGeometry(.061,.109,.018),new T.MeshBasicMaterial(),54);
+  flakes.frustumCulled=false;for(let i=0;i<54;i++)flakes.setColorAt(i,new T.Color(shades[i%4]));
+  this.flakes=flakes;this.flakePose=new T.Object3D();p.add(flakes);p.visible=false;
+ }
+ moveConfetti(t){
+  const o=this.flakePose;
+  for(let i=0;i<this.flakes.count;i++){
+   const a=(i*11.647+t*(.61+i%4*.10)),f=(t*(.72+i%8*.033)+i*.153)%4.5;
+   o.position.set(((i*17)%53/53-.5)*6.1+Math.sin(a)*.38,4.47-f,.80+(i%11)*.105);
+   o.rotation.set(a*.61,a*.84,a);o.updateMatrix();this.flakes.setMatrixAt(i,o.matrix);
+  }
+  this.flakes.instanceMatrix.needsUpdate=true;
  }
  pack(parent,keep=new Set()){
   const buckets=new Map();
@@ -406,7 +418,8 @@ export class Arena{
     const a=this.actors[rider.id];a.root.visible=true;a.root.position.set([0,-1.72,1.72][i],[1.205,.905,.685][i],0);
     a.root.rotation.set(0,0,0);this.pose(a,rider.pedal,'award',t);
    });
-   eye=vec(.28+Math.sin(t*.45)*.55,3.04,7.6);aim=vec(0,1.85,0);
+   eye=vec(.14+Math.sin(t*.45)*.42,3.16,10.72);aim=vec(0,1.66,0);
+   this.moveConfetti(t);
   }else if(mode==='entry'){
    const advance=Math.min(1,t/2.9),x=-9.10;
    for(let i=0;i<3;i++){
@@ -438,5 +451,6 @@ export class Arena{
   this.r.render(this.scene,this.cam);
  }
 }
+
 
 
