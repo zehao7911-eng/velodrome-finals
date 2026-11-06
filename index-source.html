@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#132c3b">
+<title>Velodrome Finals</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="game">
+ <canvas id="scene" aria-label="3D indoor cycling arena"></canvas>
+ <div class="vignette" aria-hidden="true"></div>
+ <header>
+  <div class="logo"><span>VF</span><div><b>VELODROME</b><small>FINALS <i></i> LIVE</small></div></div>
+  <nav aria-label="Game controls"><button id="series">Series</button><button id="menu" aria-label="Pause">Ⅱ</button></nav>
+ </header>
+ <section class="racedata" id="data" aria-label="Race status" hidden>
+  <div><small>POSITION</small><strong id="rank"></strong></div>
+  <div><small>LAP</small><strong id="lap"></strong></div>
+  <div><small>TIME</small><strong id="time"></strong></div>
+ </section>
+ <div id="call" class="call" role="status"></div>
+ <div id="speedFx" class="speedfx" aria-hidden="true"></div>
+ <section class="intro" id="intro">
+  <div id="seriesTag">TRACK SERIES / 01</div>
+  <h1>Velodrome<br><em>Finals</em></h1>
+  <p>Six riders. Four final spots.</p>
+  <button class="primary" id="enter">Enter arena <span aria-hidden="true">↗</span></button>
+ </section>
+ <section id="grid" class="grid" hidden>
+  <div class="kicker" id="gridKicker"></div>
+  <h2 id="gridTitle"></h2>
+  <p id="gridText"></p>
+  <button id="start" class="primary">Start race <span aria-hidden="true">→</span></button>
+ </section>
+ <section id="controls" class="controls" aria-label="Cycling controls" hidden>
+  <div class="energy">
+   <span>STAMINA</span><b id="energyText"></b>
+   <div class="energyTrack" role="meter" id="meter" aria-label="Stamina" aria-valuemin="0" aria-valuemax="100"><div id="energyBar"></div></div>
+  </div>
+  <div class="drive">
+   <div><b id="cue"></b><small id="cueSub"></small></div>
+   <button id="power" class="power" aria-label="Hold to sprint"><span aria-hidden="true">ϟ</span> SPRINT</button>
+  </div>
+ </section>
+ <div id="error" hidden><h2>3D arena unavailable</h2><p>WebGL is required to enter the arena.</p><button onclick="location.reload()">Reload</button></div>
+ <div id="rotate"><span aria-hidden="true">▯</span>Turn your phone upright</div>
+ <dialog id="dialog"><div id="panel"></div></dialog>
+</main>
+<script src="vendor/three.min.js"></script>
+<script type="module" src="app.mjs"></script>
+</body>
+</html>
