@@ -1,4 +1,4 @@
-import {LAP,CUPS,TEAMS,profile,merge,unlocked,available,newRace,track,total,rank,sorted,qualified,start,step,finalFrom,settle,restore} from './core.mjs';
+import {LAP,CUPS,TEAMS,KITS,profile,merge,unlocked,available,newRace,track,total,rank,sorted,qualified,start,step,finalFrom,settle,restore} from './core.mjs';
 import {Arena} from './view.mjs';
 import {VeloHost} from './sdk.mjs';
 
@@ -10,7 +10,7 @@ try{saved=JSON.parse(localStorage.getItem(key))}catch{}
 let p=profile(saved?.profile),r=restore(saved?.race,p)||newRace(unlocked(p));
 if(!available(p,p.kit))p.kit='coral';
 let arena,host,intro=!saved?.entered,pause=false,needsResume=r.phase==='race'||r.phase==='countdown',hasLocal=!!saved?.race;
-let pointer=null,keyboard=false,support={},modal='',audio,notice='',noticeAt=0,lastRank=0,previousLap=0,previousCount=0;
+let pointer=null,keyboard=false,support={},modal='',audio,notice='',noticeAt=0,lastRank=0,previousLap=0,previousCount=0,finishAnnounced=!!r.riders[0].finish;
 let oldHud='',rendered=0,clock=performance.now(),acc=0;
 try{arena=new Arena(canvas)}catch(e){console.error('3D arena failed',e);$('error').hidden=false;$('intro').hidden=true}
 function packet(){return {game:'velodrome-finals',v:1,profile:p,race:r,entered:!intro}}
@@ -23,7 +23,7 @@ function sound(kind){
  try{
   const AC=window.AudioContext||window.webkitAudioContext;
   if(!AC)return;audio??=new AC();if(audio.state==='suspended')audio.resume().catch(()=>{});
-  const events={tick:[340],go:[600,895],pass:[530,784],lap:[440,662],end:[440,554,660,881],press:[225],low:[160,110]};
+  const events={tick:[340],go:[600,895],pass:[530,784],lap:[440,662],end:[440,554,660,881],line:[550,733,990],press:[225],low:[160,110]};
   for(const [i,f] of events[kind].entries()){
    const t=audio.currentTime+i*.07,osc=audio.createOscillator(),g=audio.createGain();
    osc.type=kind==='press'?'triangle':'sine';osc.frequency.setValueAtTime(f,t);osc.frequency.exponentialRampToValueAtTime(f*.88,t+.16);
@@ -54,7 +54,8 @@ function hud(now=performance.now()){
  $('intro').hidden=!intro;$('grid').hidden=!grid&&!result;$('data').hidden=intro||grid;$('controls').hidden=intro||!live;
  const a=r.riders[0],lap=Math.max(1,Math.min(r.laps,Math.floor(a.d/LAP)+1)),pos=rank(r),energy=Math.round(r.energy);
  const [cue,sub]=statusText(),shown=r.phase==='countdown'?String(Math.max(1,Math.ceil(r.count))):now<noticeAt?notice:'';
- const signature=[r.cup,r.round,r.phase,intro,lap,pos,Math.round((a.finish||r.time)*10),energy,cue,shown,r.boost].join('|');
+ const progress=Math.min(1,Math.max(0,(a.d-(lap-1)*LAP)/LAP));
+ const signature=[r.cup,r.round,r.phase,intro,lap,pos,Math.round((a.finish||r.time)*10),energy,cue,shown,r.boost,Math.round(progress*100)].join('|');
  if(signature===oldHud)return;oldHud=signature;
  $('seriesTag').textContent='TRACK SERIES / '+String(r.cup+1).padStart(2,'0');
  $('gridKicker').textContent=CUPS[r.cup].name.toUpperCase();
@@ -81,7 +82,7 @@ function actions(items){
 }
 function text(value){const p=document.createElement('p');p.textContent=value;return p}
 function setRace(next){
- host.end();r=next;intro=false;needsResume=false;noticeAt=0;release();lastRank=0;previousLap=0;previousCount=0;
+ host.end();r=next;intro=false;needsResume=false;noticeAt=0;release();lastRank=0;previousLap=0;previousCount=0;finishAnnounced=false;
  if(dialog.open)dialog.close();pause=false;save();oldHud='';hud();
 }
 function chooseCup(i){
@@ -158,7 +159,9 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{if(e.code==='Space')keyboard=false});
 dialog.addEventListener('close',()=>{
  pause=false;modal='';acc=0;clock=performance.now();
- if(needsResume&&!orientation.matches){needsResume=false;host.start()}
+ if(needsResume&&!orientation.matches){
+  needsResume=false;lastRank=rank(r);previousLap=Math.max(1,Math.floor(r.riders[0].d/LAP)+1);previousCount=Math.ceil(r.count);host.start();
+ }
  hud();
 });
 orientation.addEventListener('change',()=>{release();if(orientation.matches&&!dialog.open&&(r.phase==='race'||r.phase==='countdown'))openPause()});
@@ -173,7 +176,7 @@ host=new VeloHost(window,{
   p=merge(p,profile(v.profile));
   if(!hasLocal){
    const remote=restore(v.race,p);
-   r=remote||newRace(unlocked(p));intro=v.entered!==true&&!remote;
+   r=remote||newRace(unlocked(p));intro=v.entered!==true&&!remote;finishAnnounced=!!r.riders[0].finish;
    if(r.phase==='countdown'||r.phase==='race'){needsResume=true;openPause()}
    if(r.phase==='result'){intro=false;result()}
   }
@@ -201,7 +204,8 @@ function sim(){
  }
  if(r.phase==='race'){
   const a=r.riders[0],pos=rank(r),lap=Math.max(1,Math.floor(a.d/LAP)+1);
-  if(!a.finish&&lap>previousLap&&lap<=r.laps){call(lap===r.laps?'FINAL LAP':'LAP '+lap,.94);sound('lap');save();previousLap=lap}
+  if(a.finish&&!finishAnnounced){finishAnnounced=true;call('FINISH',1.1);sound('line');navigator.vibrate?.(15)}
+  else if(!a.finish&&lap>previousLap&&lap<=r.laps){call(lap===r.laps?'FINAL LAP':'LAP '+lap,.94);sound('lap');save();previousLap=lap}
   else if(lastRank&&pos<lastRank&&!a.finish&&r.time>1.2){call('OVERTAKE',.75);sound('pass');navigator.vibrate?.(12)}
   lastRank=pos;
  }
@@ -212,7 +216,7 @@ function frame(now){
  if(!arena||document.hidden||orientation.matches||now-rendered<1000/32)return;
  rendered=now;
  const mode=intro?'entry':r.phase==='ready'?'grid':r.phase==='result'&&r.round==='final'&&r.place<=3?'podium':'race';
- arena.draw(r,p,mode,now);hud(now);
+ arena.draw(r,p,mode,now,pause||dialog.open);hud(now);
 }
 new ResizeObserver(()=>arena?.resize()).observe(canvas);
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();release();pause=true;save();$('error').hidden=false});
@@ -220,3 +224,5 @@ if(arena){
  if(needsResume)openPause();else if(r.phase==='result'){intro=false;result()}
  hud();setInterval(sim,1000/60);requestAnimationFrame(frame);
 }
+
+

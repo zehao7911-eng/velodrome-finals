@@ -74,7 +74,8 @@ export class Arena{
   this.clock=0;this.look=vec();this.cameraReady=false;this.mode='';
   this.buildTrack();this.buildBowl();this.buildInfield();this.buildPodium();
   this.actors=TEAMS.map((t,i)=>this.makeRider(t,i));
-  this.pack(this.scene);this.currentKit=null;this.resize();
+  this.pack(this.scene);this.buildDraft();
+  this.reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');this.currentKit=null;this.resize();
  }
  paint(color,rough=.72,metal=0){
   const k=[color,rough,metal].join('/');
@@ -387,6 +388,37 @@ export class Arena{
    foot.position.copy(to);foot.position.z+=.038;foot.rotation.x=ride?.12*Math.cos(k):0;
   }
  }
+ buildDraft(){
+  const pos=new Float32Array(2*11*2*3),uv=[],ind=[];
+  for(let side=0;side<2;side++)for(let i=0;i<=10;i++){
+   uv.push(i/10,0,i/10,1);
+   if(i<10){const k=side*22+i*2;ind.push(k,k+2,k+1,k+2,k+3,k+1)}
+  }
+  const g=new T.BufferGeometry();
+  g.setAttribute('position',new T.BufferAttribute(pos,3).setUsage(T.DynamicDrawUsage));
+  g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(ind);
+  const material=new T.ShaderMaterial({
+   transparent:true,depthWrite:false,side:T.DoubleSide,uniforms:{clock:{value:0}},
+   vertexShader:'varying vec2 tex; void main(){tex=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+   fragmentShader:'varying vec2 tex; uniform float clock; void main(){float edge=sin(tex.y*3.14159); float fade=sin(tex.x*3.14159); float streak=.44+.56*pow(.5+.5*sin(tex.x*23.+clock*8.),2.); gl_FragColor=vec4(.55,1.,.83,edge*fade*streak*.52);}'
+  });
+  this.draftFx=this.mesh(this.scene,g,material);this.draftFx.frustumCulled=false;this.draftFx.visible=false;
+ }
+ drawDraft(r,mode,now,paused){
+  const fx=this.draftFx,a=r.riders[0];
+  fx.visible=mode==='race'&&r.phase==='race'&&r.draft&&!r.boost&&!a.finish;
+  if(!fx.visible)return;
+  if(!paused&&!this.reducedMotion.matches)fx.material.uniforms.clock.value=now/1000;
+  const pos=fx.geometry.attributes.position;
+  for(let side=0;side<2;side++)for(let i=0;i<=10;i++){
+   const u=i/10,lane=a.lane+(side?1:-1)*(.39+.12*u);
+   for(let j=0;j<2;j++){
+    const q=track(a.d+.35+4.9*u,lane+(j-.5)*.065);
+    pos.setXYZ(side*22+i*2+j,q.x,q.y+.032,q.z);
+   }
+  }
+  pos.needsUpdate=true;
+ }
  resize(){
   const w=this.canvas.clientWidth,h=this.canvas.clientHeight;if(!w||!h)return;
   this.r.setPixelRatio(Math.min(devicePixelRatio||1,1.45));this.r.setSize(w,h,false);
@@ -400,7 +432,7 @@ export class Arena{
   this.hemi.color.setHex(v.ambient);this.key.color.setHex(v.sun);
   this.wall.color.setHex(v.wall).convertSRGBToLinear();this.floor.color.setHex(v.infield).convertSRGBToLinear();
  }
- draw(r,p,mode,now){
+ draw(r,p,mode,now,paused=false){
   this.venue(r.cup);
   if(p.kit!==this.currentKit){
    this.currentKit=p.kit;
@@ -448,9 +480,13 @@ export class Arena{
   if(!this.cameraReady){this.cam.position.copy(eye);this.look.copy(aim);this.cameraReady=true}
   else{this.cam.position.lerp(eye,.35);this.look.lerp(aim,.35)}
   this.cam.lookAt(this.look);
+  const fov=mode==='race'&&r.boost&&!this.reducedMotion.matches?55.5:53;
+  if(Math.abs(this.cam.fov-fov)>.015){this.cam.fov+=(fov-this.cam.fov)*.13;this.cam.updateProjectionMatrix()}
+  this.drawDraft(r,mode,now,paused);
   this.r.render(this.scene,this.cam);
  }
 }
+
 
 
 
