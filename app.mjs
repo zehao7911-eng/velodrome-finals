@@ -62,9 +62,16 @@ function hud(now=performance.now()){
  $('gridTitle').textContent=result?'Race complete':r.round==='heat'?'Qualifying heat':'Championship final';
  $('gridText').textContent=result?'View your times and standings.':r.round==='heat'?r.laps+' laps · Top four advance':r.laps+' laps · Race for the podium';
  $('start').textContent=result?'View results →':'Start race →';
- $('rank').textContent=pos+' / '+r.riders.length;$('lap').textContent=lap+' / '+r.laps;$('time').textContent=(a.finish||r.time).toFixed(1)+' s';
+ $('rank').textContent=pos;$('field').textContent=' / '+r.riders.length;
+ $('lapBar').style.transform='scaleX('+progress+')';
+ $('lap').textContent=lap+' / '+r.laps;$('time').textContent=(a.finish||r.time).toFixed(1)+' s';
  $('energyText').textContent=energy+'%';$('energyBar').style.transform='scaleX('+energy/100+')';$('energyBar').classList.toggle('low',energy<27);
- $('meter').setAttribute('aria-valuenow',String(energy));$('cue').textContent=cue;$('cueSub').textContent=sub;$('call').textContent=shown;
+ $('meter').setAttribute('aria-valuenow',String(energy));
+ $('sprintArc').style.strokeDasharray=energy+' 100';power.dataset.low=String(energy<27);
+ $('drive').dataset.tone=cue==='IN THE SLIPSTREAM'?'draft':cue==='SPRINT'?'sprint':cue==='RECOVER'?'recover':'idle';
+ $('cue').textContent=cue;$('cueSub').textContent=sub;
+ const banner=$('call');banner.dataset.style=r.phase==='countdown'||shown==='GO!'?'signal':'chip';
+ if(banner.textContent!==shown)banner.textContent=shown;
  power.disabled=!!a.finish;power.classList.toggle('held',r.boost);$('speedFx').classList.toggle('on',r.boost);
 }
 function open(kind,title,body){
@@ -115,9 +122,11 @@ function result(){
  list.className='result-list';
  sorted(r).forEach((a,i)=>{
   const item=document.createElement('li');if(a.id===0)item.className='you';
-  for(const v of [String(i+1).padStart(2,'0'),TEAMS[a.id].name,a.finish.toFixed(2)+' s']){
-   const s=document.createElement('span');s.textContent=v;item.append(s);
-  }
+  const number=document.createElement('span'),name=document.createElement('span'),time=document.createElement('span');
+  number.textContent=String(i+1).padStart(2,'0');name.textContent=TEAMS[a.id].name;time.textContent=a.finish.toFixed(2)+' s';
+  const jersey=a.id===0?KITS[p.kit]:TEAMS[a.id].ink;
+  name.className='jersey';name.style.setProperty('--jersey','#'+jersey.toString(16).padStart(6,'0'));
+  item.append(number,name,time);
   list.append(item);
  });
  const final=r.round==='final',top=qualified(r),medal=final&&r.place<=3;
