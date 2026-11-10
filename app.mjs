@@ -156,16 +156,7 @@ function openPause(){
  if(r.phase==='result'){result();return}
  const b=document.createElement('div');
  b.append(text('Hold SPRINT on the straight. Ease off in turns and behind a rider to recover stamina.'));
- const credit=text('');
- credit.className='music-credit';
- const song=document.createElement('a'),license=document.createElement('a');
- song.href='https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100833';
- song.textContent='Pixel Peeker Polka - faster';
- license.href='https://creativecommons.org/licenses/by/4.0/';
- license.textContent='CC BY 4.0';
- for(const link of [song,license]){link.target='_blank';link.rel='noopener noreferrer';}
- credit.append('Music: ',song,' by Kevin MacLeod · ',license);
- b.append(actions([[p.mute?'Sound off':'Sound on',()=>{p.mute=!p.mute;save();openPause()}],['Resume',closePanel,true]]),credit);
+ b.append(actions([[p.mute?'Sound off':'Sound on',()=>{p.mute=!p.mute;save();openPause()}],['Resume',closePanel,true]]));
  if(r.phase==='race'||r.phase==='countdown')save();
  open('pause','Race paused',b);
 }
