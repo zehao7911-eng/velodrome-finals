@@ -11,3 +11,7 @@ Open index.html or standalone.html directly in a WebGL-capable browser. Both inc
 GameWave starts a host round on a committed race start or explicit resume of a restored running race. The final classification or a confirmed race abandonment ends that round. Heat and final are separate races. The SDK is optional for independent startup, and the only game save key is velodrome-finals-v1. A confirmed positive like unlocks Lilac, and a confirmed direct comment unlocks Sunset, once per saved profile. Gameplay does not require social interaction. GameWave logic is exercised with mocks, not a real host App import.
 
 The portrait HUD uses a circular sprint dial in the lower-right thumb zone. Its ring and the separate stamina meter report the same resource. The timing panel includes progress through the current lap. Mint track streaks mark an active slipstream, and sprint subtly widens the chase camera unless reduced motion is enabled.
+# Soundtrack
+
+The race uses “Pixel Peeker Polka - faster” by Kevin MacLeod. Music starts when you enter a race. Use the existing sound control in the pause menu for music and effects. The soundtrack is bundled for offline play. See [Music credits](MUSIC-CREDITS.md).
+

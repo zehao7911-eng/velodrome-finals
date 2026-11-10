@@ -4,6 +4,7 @@ import {VeloHost} from './sdk.mjs';
 
 const $=id=>document.getElementById(id),key='velodrome-finals-v1';
 const dialog=$('dialog'),panel=$('panel'),power=$('power'),canvas=$('scene');
+const raceMusic=$('raceMusic');
 const orientation=matchMedia('(orientation:landscape) and (max-height:540px)');
 let saved;
 try{saved=JSON.parse(localStorage.getItem(key))}catch{}
@@ -31,6 +32,19 @@ function sound(kind){
    osc.connect(g).connect(audio.destination);osc.start(t);osc.stop(t+.19);
   }
  }catch{}
+}
+function syncMusic(){
+ const live=r.phase==='countdown'||r.phase==='race';
+ if(!arena||intro||!live||p.mute||pause||dialog.open||document.hidden||orientation.matches){
+  raceMusic.pause();
+  return;
+ }
+ if(raceMusic.paused)raceMusic.play().catch(()=>{});
+}
+function closePanel(){
+ dialog.close();
+ pause=false;
+ syncMusic();
 }
 function call(text,duration=1){
  notice=text;noticeAt=performance.now()+duration*1000;
@@ -75,10 +89,10 @@ function hud(now=performance.now()){
  power.disabled=!!a.finish;power.classList.toggle('held',r.boost);$('speedFx').classList.toggle('on',r.boost);
 }
 function open(kind,title,body){
- release();pause=true;modal=kind;
+ release();pause=true;modal=kind;syncMusic();
  dialog.classList.toggle('awards',kind==='result'&&r.round==='final'&&r.place<=3);
  const bar=document.createElement('div'),h=document.createElement('h2'),b=document.createElement('button');
- bar.className='panel-head';h.textContent=title;b.textContent='Close';b.onclick=()=>dialog.close();bar.append(h,b);
+ bar.className='panel-head';h.textContent=title;b.textContent='Close';b.onclick=closePanel;bar.append(h,b);
  panel.replaceChildren(bar,body);
  if(!dialog.open)dialog.showModal();
 }
@@ -90,12 +104,12 @@ function actions(items){
 function text(value){const p=document.createElement('p');p.textContent=value;return p}
 function setRace(next){
  host.end();r=next;intro=false;needsResume=false;noticeAt=0;release();lastRank=0;previousLap=0;previousCount=0;finishAnnounced=false;
- if(dialog.open)dialog.close();pause=false;save();oldHud='';hud();
+ if(dialog.open)dialog.close();pause=false;syncMusic();save();oldHud='';hud();
 }
 function chooseCup(i){
  if(i>unlocked(p))return;
  if(r.phase==='race'||r.phase==='countdown'){
-  const body=document.createElement('div');body.append(text('Leave this race and enter another cup?'),actions([['Keep racing',()=>dialog.close()],['Leave race',()=>setRace(newRace(i)),true]]));
+  const body=document.createElement('div');body.append(text('Leave this race and enter another cup?'),actions([['Keep racing',closePanel],['Leave race',()=>setRace(newRace(i)),true]]));
   open('confirm','Change cup',body);return;
  }
  setRace(newRace(i));
@@ -142,7 +156,16 @@ function openPause(){
  if(r.phase==='result'){result();return}
  const b=document.createElement('div');
  b.append(text('Hold SPRINT on the straight. Ease off in turns and behind a rider to recover stamina.'));
- b.append(actions([[p.mute?'Sound off':'Sound on',()=>{p.mute=!p.mute;save();openPause()}],['Resume',()=>dialog.close(),true]]));
+ const credit=text('');
+ credit.className='music-credit';
+ const song=document.createElement('a'),license=document.createElement('a');
+ song.href='https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100833';
+ song.textContent='Pixel Peeker Polka - faster';
+ license.href='https://creativecommons.org/licenses/by/4.0/';
+ license.textContent='CC BY 4.0';
+ for(const link of [song,license]){link.target='_blank';link.rel='noopener noreferrer';}
+ credit.append('Music: ',song,' by Kevin MacLeod · ',license);
+ b.append(actions([[p.mute?'Sound off':'Sound on',()=>{p.mute=!p.mute;save();openPause()}],['Resume',closePanel,true]]),credit);
  if(r.phase==='race'||r.phase==='countdown')save();
  open('pause','Race paused',b);
 }
@@ -152,7 +175,7 @@ $('start').onclick=()=>{
  if(!arena||orientation.matches)return;
  if(r.phase==='result'){result();return}
  if(!start(r))return;
- host.start();previousCount=3;noticeAt=0;lastRank=rank(r);previousLap=1;save();sound('tick');hud();
+ host.start();previousCount=3;noticeAt=0;lastRank=rank(r);previousLap=1;save();sound('tick');syncMusic();hud();
 };
 power.addEventListener('pointerdown',e=>{
  if(!e.isPrimary||e.button!==0||pause||orientation.matches)return;
@@ -171,12 +194,13 @@ dialog.addEventListener('close',()=>{
  if(needsResume&&!orientation.matches){
   needsResume=false;lastRank=rank(r);previousLap=Math.max(1,Math.floor(r.riders[0].d/LAP)+1);previousCount=Math.ceil(r.count);host.start();
  }
- hud();
+ syncMusic();hud();
 });
-orientation.addEventListener('change',()=>{release();if(orientation.matches&&!dialog.open&&(r.phase==='race'||r.phase==='countdown'))openPause()});
+orientation.addEventListener('change',()=>{release();if(orientation.matches&&!dialog.open&&(r.phase==='race'||r.phase==='countdown'))openPause();syncMusic()});
 window.addEventListener('blur',release);
 document.addEventListener('visibilitychange',()=>{
  if(document.hidden){release();if(!dialog.open&&(r.phase==='race'||r.phase==='countdown'))openPause()}
+ syncMusic();
 });
 host=new VeloHost(window,{
  reward:k=>{if(!['lilac','sunset'].includes(k)||p[k])return;p[k]=true;save();sound('end');if(modal==='series')series()},
@@ -189,11 +213,11 @@ host=new VeloHost(window,{
    if(r.phase==='countdown'||r.phase==='race'){needsResume=true;openPause()}
    if(r.phase==='result'){intro=false;result()}
   }
-  oldHud='';hud();save();
+  syncMusic();oldHud='';hud();save();
  }
 });
 host.poll();
-window.addEventListener('pagehide',()=>{save();host.stop()});
+window.addEventListener('pagehide',()=>{raceMusic.pause();save();host.stop()});
 window.addEventListener('pageshow',e=>{if(e.persisted){host.alive=true;host.sdk=null;host.loadSeen=new WeakSet();host.poll()}});
 function sim(){
  const now=performance.now(),dt=Math.min(.12,(now-clock)/1000);clock=now;
@@ -228,7 +252,7 @@ function frame(now){
  arena.draw(r,p,mode,now,pause||dialog.open);hud(now);
 }
 new ResizeObserver(()=>arena?.resize()).observe(canvas);
-canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();release();pause=true;save();$('error').hidden=false});
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();release();pause=true;syncMusic();save();$('error').hidden=false});
 if(arena){
  if(needsResume)openPause();else if(r.phase==='result'){intro=false;result()}
  hud();setInterval(sim,1000/60);requestAnimationFrame(frame);
