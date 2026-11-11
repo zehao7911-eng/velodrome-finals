@@ -13,5 +13,5 @@ GameWave starts a host round on a committed race start or explicit resume of a r
 The portrait HUD uses a circular sprint dial in the lower-right thumb zone. Its ring and the separate stamina meter report the same resource. The timing panel includes progress through the current lap. Mint track streaks mark an active slipstream, and sprint subtly widens the chase camera unless reduced motion is enabled.
 # Soundtrack
 
-The race uses “Pixel Peeker Polka - faster” by Kevin MacLeod. Music starts when you enter a race. Use the existing sound control in the pause menu for music and effects. The soundtrack is bundled for offline play. See [Music credits](MUSIC-CREDITS.md).
+The supplied background audio starts when you enter a race. Use the existing sound control in the pause menu for music and effects. The track is included for offline play.
 

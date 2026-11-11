@@ -7,7 +7,7 @@ const code = modules.map(file => read(file, 'utf8')
   .replace(/^import .*?;\s*/gm, '')
   .replace(/\bexport\s+/g, '')).join('\n');
 const library = read('vendor/three.min.js', 'utf8');
-const track = 'music/pixel-peeker-polka-faster.mp3';
+const track = 'music/race-bgm.mp3';
 const audio = read(track);
 let html = read('index-source.html', 'utf8');
 if (!html.includes('src="' + track + '"') || !audio.length) throw Error('Missing soundtrack in source build');
